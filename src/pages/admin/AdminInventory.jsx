@@ -1,6 +1,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import AdminLayout from "@components/admin/AdminLayout";
+import { useAdminAccess } from "@hooks/useAdminAccess";
 import {
   adminFetchInventoryPage,
   adminUpsertInventoryItem,
@@ -62,6 +63,8 @@ function conditionLabel(condition) {
 }
 
 export default function AdminInventory() {
+  // Read-only users can browse items and loans; RLS (migration 0008) blocks writes anyway.
+  const { canWrite } = useAdminAccess();
   const [items, setItems] = useState([]);
   const [loans, setLoans] = useState([]);
   const [currentLoans, setCurrentLoans] = useState([]);
@@ -460,6 +463,7 @@ export default function AdminInventory() {
               </p>
             </div>
 
+            {canWrite && (
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
@@ -477,6 +481,7 @@ export default function AdminInventory() {
                 + Add New Item
               </button>
             </div>
+            )}
           </div>
 
           {error && (
@@ -694,7 +699,7 @@ export default function AdminInventory() {
                               )}
                             </button>
 
-                            {!bookingMode && (
+                            {!bookingMode && canWrite && (
                               <div className="mt-3 flex gap-4 border-t border-white/10 pt-3">
                                 <button
                                   type="button"
@@ -852,6 +857,8 @@ export default function AdminInventory() {
                             {selectedItem.description || "No description."}
                           </p>
 
+                          {canWrite && (
+                          <>
                           <button
                             type="button"
                             onClick={() => {
@@ -877,6 +884,8 @@ export default function AdminInventory() {
                           >
                             Retire Item
                           </button>
+                          </>
+                          )}
                         </section>
                       )}
 
@@ -946,7 +955,7 @@ export default function AdminInventory() {
                                   )}
                                 </div>
 
-                                {!loan.returned_at && (
+                                {!loan.returned_at && canWrite && (
                                   <button
                                     type="button"
                                     onClick={() => handleReturnLoan(loan.id)}
@@ -963,6 +972,7 @@ export default function AdminInventory() {
                     </>
                   )}
 
+                  {canWrite && (
                   <section className="rounded-xl border border-white/10 bg-white/5 p-5">
                     <h2 className="mb-5 text-xl font-semibold">
                       {editingItemId ? "Edit Item" : "Add New Item"}
@@ -1095,6 +1105,7 @@ export default function AdminInventory() {
                       </div>
                     </form>
                   </section>
+                  )}
                 </div>
               </div>
             </>
@@ -1184,6 +1195,7 @@ export default function AdminInventory() {
                           )}
                         </div>
 
+                        {canWrite && (
                         <button
                           type="button"
                           onClick={() => handleReturnLoan(loan.loan_id)}
@@ -1191,6 +1203,7 @@ export default function AdminInventory() {
                         >
                           Record Return
                         </button>
+                        )}
                       </div>
                     </div>
                   ))}

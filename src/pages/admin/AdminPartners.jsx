@@ -14,6 +14,7 @@ import { useEnumOptions } from "@hooks/useEnumOptions";
 import AdminBanner from "@components/admin/AdminBanner";
 import AdminListHeader from "@components/admin/AdminListHeader";
 import AdminSideCard from "@components/admin/AdminSideCard";
+import { useAdminAccess } from "@hooks/useAdminAccess";
 import AdminPagination from "@components/admin/AdminPagination";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -29,6 +30,7 @@ const emptyForm = (defaultCategory = "") => ({
 });
 
 export default function AdminPartners() {
+  const { canWrite } = useAdminAccess();
   // Dropdown values come from the Supabase partner_category enum.
   const { options: categoryOptions } = useEnumOptions(
     ENUM_TYPES.PARTNER_CATEGORY,
@@ -292,15 +294,17 @@ export default function AdminPartners() {
                       variant="secondary"
                       onClick={() => startEdit(partner)}
                     >
-                      Edit
+                      {canWrite ? "Edit" : "View"}
                     </Button>
-                    <Button
-                      size="xs"
-                      variant="danger"
-                      onClick={() => handleDelete(partner)}
-                    >
-                      Delete
-                    </Button>
+                    {canWrite && (
+                      <Button
+                        size="xs"
+                        variant="danger"
+                        onClick={() => handleDelete(partner)}
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 </li>
               ))}

@@ -13,11 +13,13 @@ import { useEnumOptions } from "@hooks/useEnumOptions";
 import AdminBanner from "@components/admin/AdminBanner";
 import AdminListHeader from "@components/admin/AdminListHeader";
 import AdminSideCard from "@components/admin/AdminSideCard";
+import { useAdminAccess } from "@hooks/useAdminAccess";
 import AdminPagination from "@components/admin/AdminPagination";
 
 const DEFAULT_PAGE_SIZE = 10;
 
 export default function AdminFaqs() {
+  const { canWrite } = useAdminAccess();
   // Dropdown values come from the Supabase faq_category enum.
   const { options: categoryOptions } = useEnumOptions(ENUM_TYPES.FAQ_CATEGORY);
   const defaultCategory = categoryOptions[0]?.value ?? "";
@@ -203,15 +205,17 @@ export default function AdminFaqs() {
                       variant="secondary"
                       onClick={() => startEdit(faq)}
                     >
-                      Edit
+                      {canWrite ? "Edit" : "View"}
                     </Button>
-                    <Button
-                      size="xs"
-                      variant="danger"
-                      onClick={() => handleDelete(faq)}
-                    >
-                      Delete
-                    </Button>
+                    {canWrite && (
+                      <Button
+                        size="xs"
+                        variant="danger"
+                        onClick={() => handleDelete(faq)}
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 </li>
               ))}

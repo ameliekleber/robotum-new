@@ -3,6 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import Button from "@components/ui/Button";
 import { getSessionEmail, onAuthEmailChange, signOutAdmin } from "@data";
 import * as assets from "@assets";
+import { useAdminAccess } from "@hooks/useAdminAccess";
+import { ADMIN_AREAS } from "@config/adminAreas";
 
 export default function AdminLayout({ children, title, description }) {
   const location = useLocation();
@@ -40,16 +42,14 @@ export default function AdminLayout({ children, title, description }) {
     window.location.href = "/admin/login";
   };
 
+  // Only the areas this account may at least read.
+  const { canReadArea } = useAdminAccess();
   const navItems = [
     { to: "/admin", label: "Dashboard" },
-    { to: "/admin/faqs", label: "FAQs" },
-    { to: "/admin/partners", label: "Partners" },
-    { to: "/admin/projects", label: "Projects" },
-    { to: "/admin/events", label: "Events" },
-    { to: "/admin/inventory", label: "Inventory" },
-    { to: "/admin/members", label: "Members" },
-    // later:
-    // { to: "/admin/applications", label: "Applications" },
+    ...ADMIN_AREAS.filter((a) => canReadArea(a.area)).map((a) => ({
+      to: a.path,
+      label: a.label,
+    })),
   ];
 
   const navLinkClass = (active) =>

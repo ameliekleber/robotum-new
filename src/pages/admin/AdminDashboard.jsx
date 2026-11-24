@@ -9,45 +9,55 @@ import {
   adminFetchPartners,
   adminFetchProjects,
 } from "@data";
+import { useAdminAccess } from "@hooks/useAdminAccess";
+import { ADMIN_AREAS } from "@config/adminAreas";
+
+// Count shown on the dashboard per area (areas without one only get a card).
+const STAT_LOADERS = {
+  faqs: { label: "Total FAQs", load: adminFetchFaqs },
+  partners: { label: "Total Partners", load: adminFetchPartners },
+  projects: { label: "Total Projects", load: adminFetchProjects },
+  events: { label: "Total Events", load: adminFetchEvents },
+};
 
 export default function AdminDashboard() {
-  const [counts, setCounts] = useState({
-    faqs: null,
-    partners: null,
-    projects: null,
-    events: null,
-  });
+  const { canReadArea } = useAdminAccess();
+  // Only areas this account may read: no cards, links or counts for the rest.
+  const visibleAreas = ADMIN_AREAS.filter((a) => canReadArea(a.area));
+  const statAreas = visibleAreas
+    .map((a) => a.area)
+    .filter((area) => STAT_LOADERS[area]);
+  const statKey = statAreas.join("|");
+
+  const [counts, setCounts] = useState({});
   const [loadingCounts, setLoadingCounts] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     let mounted = true;
+    const areas = statKey ? statKey.split("|") : [];
 
     const loadDashboardCounts = async () => {
       setLoadingCounts(true);
       setErrorMsg("");
 
       try {
-        const [faqs, partners, projects, events] = await Promise.all([
-          adminFetchFaqs(),
-          adminFetchPartners(),
-          adminFetchProjects(),
-          adminFetchEvents(),
-        ]);
+        const results = await Promise.all(
+          areas.map((area) => STAT_LOADERS[area].load()),
+        );
 
         if (!mounted) return;
 
-        setCounts({
-          faqs: faqs.length,
-          partners: partners.length,
-          projects: projects.length,
-          events: events.length,
-        });
+        setCounts(
+          Object.fromEntries(
+            areas.map((area, i) => [area, results[i]?.length ?? null]),
+          ),
+        );
       } catch (err) {
         logger.error("Error loading admin dashboard counts:", err);
         if (!mounted) return;
 
-        setCounts({ faqs: null, partners: null, projects: null, events: null });
+        setCounts({});
         setErrorMsg("Failed to load dashboard stats. Please try again.");
       } finally {
         if (mounted) {
@@ -61,14 +71,12 @@ export default function AdminDashboard() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [statKey]);
 
-  const statCards = [
-    { label: "Total FAQs", value: counts.faqs },
-    { label: "Total Partners", value: counts.partners },
-    { label: "Total Projects", value: counts.projects },
-    { label: "Total Events", value: counts.events },
-  ];
+  const statCards = statAreas.map((area) => ({
+    label: STAT_LOADERS[area].label,
+    value: counts[area],
+  }));
 
   return (
     <AdminLayout
@@ -78,74 +86,37 @@ export default function AdminDashboard() {
       <div className="space-y-8">
         {errorMsg && <AdminBanner message={errorMsg} />}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {statCards.map((item) => (
-            <div
-              key={item.label}
-              className="card-surface p-5"
-            >
-              <p className="text-xs text-white/60">{item.label}</p>
-              <p
-                className={`text-2xl font-semibold text-white mt-1 ${
-                  loadingCounts ? "animate-pulse" : ""
-                }`}
-              >
-                {loadingCounts ? "..." : item.value ?? "-"}
-              </p>
-            </div>
-          ))}
-        </div>
+        {statCards.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {statCards.map((item) => (
+              <div key={item.label} className="card-surface p-5">
+                <p className="text-xs text-white/60">{item.label}</p>
+                <p
+                  className={`text-2xl font-semibold text-white mt-1 ${
+                    loadingCounts ? "animate-pulse" : ""
+                  }`}
+                >
+                  {loadingCounts ? "..." : item.value ?? "-"}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Navigation Cards */}
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <Link
-            to="/admin/faqs"
-            className="card-surface card-surface-hover px-6 py-8 transition-all backdrop-blur-md block"
-          >
-            <h3 className="text-lg font-semibold text-white mb-2">FAQs</h3>
-            <p className="text-white/70 text-sm">
-              Manage FAQ entries shown on the public site.
-            </p>
-          </Link>
-
-          <Link
-            to="/admin/partners"
-            className="card-surface card-surface-hover px-6 py-8 transition-all backdrop-blur-md block"
-          >
-            <h3 className="text-lg font-semibold text-white mb-2">Partners</h3>
-            <p className="text-white/70 text-sm">
-              Manage partner logos and links shown on the site.
-            </p>
-          </Link>
-          <Link
-            to="/admin/projects"
-            className="card-surface card-surface-hover px-6 py-8 transition-all backdrop-blur-md block"
-          >
-            <h3 className="text-lg font-semibold text-white mb-2">Projects</h3>
-            <p className="text-white/70 text-sm">
-              Manage project entries shown on the site.
-            </p>
-          </Link>
-
-          <Link
-            to="/admin/events"
-            className="card-surface card-surface-hover px-6 py-8 transition-all backdrop-blur-md block"
-          >
-            <h3 className="text-lg font-semibold text-white mb-2">Events</h3>
-            <p className="text-white/70 text-sm">
-              Manage event entries shown on the site.
-            </p>
-          </Link>
-
-          <Link
-            to="/admin/inventory"
-            className="card-surface card-surface-hover px-6 py-8 transition-all backdrop-blur-md block"
-          >
-            <h3 className="text-lg font-semibold text-white mb-2">Inventory</h3>
-            <p className="text-white/70 text-sm">
-              Manage roboTUM inventory and equipment.
-            </p>
-          </Link>
+          {visibleAreas.map((item) => (
+            <Link
+              key={item.area}
+              to={item.path}
+              className="card-surface card-surface-hover px-6 py-8 transition-all backdrop-blur-md block"
+            >
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {item.label}
+              </h3>
+              <p className="text-white/70 text-sm">{item.description}</p>
+            </Link>
+          ))}
 
           <div className="card-surface px-6 py-8 opacity-40 cursor-not-allowed backdrop-blur-md">
             <h3 className="text-lg font-semibold text-white mb-2">
@@ -153,16 +124,6 @@ export default function AdminDashboard() {
             </h3>
             <p className="text-white/70 text-sm">Coming soon…</p>
           </div>
-
-          <Link
-            to="/admin/members"
-            className="card-surface card-surface-hover px-6 py-8 transition-all backdrop-blur-md block"
-          >
-            <h3 className="text-lg font-semibold text-white mb-2">Members</h3>
-            <p className="text-white/70 text-sm">
-              Manage teams, club memberships and member status.
-            </p>
-          </Link>
         </div>
       </div>
     </AdminLayout>

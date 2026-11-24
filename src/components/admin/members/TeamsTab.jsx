@@ -8,6 +8,7 @@ import AdminListHeader from "@components/admin/AdminListHeader";
 import AdminSideCard from "@components/admin/AdminSideCard";
 import { formatEnumLabel } from "@utils/formatCategory";
 import { useEnumOptions } from "@hooks/useEnumOptions";
+import { useAdminAccess } from "@hooks/useAdminAccess";
 import {
   adminRemoveMemberProject,
   adminUpsertMemberProject,
@@ -111,6 +112,8 @@ function TeamMemberGroup({ title, entries, tone, onSelect, selectedId }) {
 }
 
 export default function TeamsTab({ members, projects, departments, onSaved, onError }) {
+  // Read-only users can still pick a member and see their teams.
+  const { canWrite } = useAdminAccess();
   const editorRef = useRef(null);
   // Values come from the project_category / project_status enums. The status
   // filter defaults to the enum's first value (active), like admin form defaults.
@@ -335,6 +338,7 @@ export default function TeamsTab({ members, projects, departments, onSaved, onEr
         <div ref={editorRef} className="scroll-mt-32">
           <AdminSideCard
             title="Team assignments"
+            lockWhenReadOnly={false}
             description="Add a member to a project team, change their role or department, or remove them. Click a name on the left to load it here."
           >
             <div className="space-y-4">
@@ -366,6 +370,7 @@ export default function TeamsTab({ members, projects, departments, onSaved, onEr
                                   ` · ${assignment.departmentName}`}
                               </p>
                             </div>
+                            {canWrite && (
                             <div className="flex shrink-0 gap-1.5">
                               <Button
                                 size="xs"
@@ -382,12 +387,14 @@ export default function TeamsTab({ members, projects, departments, onSaved, onEr
                                 Remove
                               </Button>
                             </div>
+                            )}
                           </li>
                         ))}
                       </ul>
                     )}
                   </div>
 
+                  {canWrite && (
                   <form
                     className="space-y-4 border-t border-white/10 pt-4"
                     onSubmit={handleSubmit}
@@ -469,6 +476,7 @@ export default function TeamsTab({ members, projects, departments, onSaved, onEr
                       </Button>
                     </div>
                   </form>
+                  )}
                 </>
               )}
             </div>

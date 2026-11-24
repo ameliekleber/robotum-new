@@ -16,6 +16,7 @@ import { useEnumOptions } from "@hooks/useEnumOptions";
 import AdminBanner from "@components/admin/AdminBanner";
 import AdminListHeader from "@components/admin/AdminListHeader";
 import AdminSideCard from "@components/admin/AdminSideCard";
+import { useAdminAccess } from "@hooks/useAdminAccess";
 import AdminPagination from "@components/admin/AdminPagination";
 import { AVAILABLE_PROJECT_VIEWERS } from "@pages/project-viewers/viewerConfig";
 
@@ -39,6 +40,7 @@ const emptyForm = (defaultCategory = "") => ({
 });
 
 export default function AdminProjects() {
+  const { canWrite } = useAdminAccess();
   // Dropdown values come from the Supabase enums, not from a hardcoded list.
   const { options: categoryOptions } = useEnumOptions(
     ENUM_TYPES.PROJECT_CATEGORY,
@@ -361,15 +363,17 @@ export default function AdminProjects() {
                       variant="secondary"
                       onClick={() => startEdit(p)}
                     >
-                      Edit
+                      {canWrite ? "Edit" : "View"}
                     </Button>
-                    <Button
-                      size="xs"
-                      variant="danger"
-                      onClick={() => handleDelete(p)}
-                    >
-                      Delete
-                    </Button>
+                    {canWrite && (
+                      <Button
+                        size="xs"
+                        variant="danger"
+                        onClick={() => handleDelete(p)}
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 </li>
               ))}

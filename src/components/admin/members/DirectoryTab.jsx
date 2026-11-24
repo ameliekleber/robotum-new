@@ -11,6 +11,7 @@ import AdminListHeader from "@components/admin/AdminListHeader";
 import AdminSideCard from "@components/admin/AdminSideCard";
 import AdminPagination from "@components/admin/AdminPagination";
 import { useClientPagination } from "@hooks/useClientPagination";
+import { useAdminAccess } from "@hooks/useAdminAccess";
 import {
   adminSetMemberStatus,
   adminUpsertMember,
@@ -55,6 +56,7 @@ function emptyForm(defaultStatus) {
 }
 
 export default function DirectoryTab({ members, statusOptions, onSaved, onError }) {
+  const { canWrite } = useAdminAccess();
   // New members default to the enum's first value (active).
   const defaultStatus = statusOptions[0]?.value ?? "";
   const editorRef = useRef(null);
@@ -225,9 +227,9 @@ export default function DirectoryTab({ members, statusOptions, onSaved, onError 
                 actions={
                   <>
                     <Button size="xs" variant="secondary" onClick={() => startEdit(member)}>
-                      Edit
+                      {canWrite ? "Edit" : "View"}
                     </Button>
-                    {member.status !== MEMBER_STATUS_DELETED && (
+                    {canWrite && member.status !== MEMBER_STATUS_DELETED && (
                       <Button size="xs" variant="danger" onClick={() => handleDelete(member)}>
                         Delete
                       </Button>

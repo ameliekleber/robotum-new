@@ -8,6 +8,7 @@ import AdminListHeader from "@components/admin/AdminListHeader";
 import AdminSideCard from "@components/admin/AdminSideCard";
 import AdminPagination from "@components/admin/AdminPagination";
 import { useClientPagination } from "@hooks/useClientPagination";
+import { useAdminAccess } from "@hooks/useAdminAccess";
 import { adminSetMemberMemberships, MEMBER_STATUS_DELETED } from "@data";
 import {
   matchesMemberQuery,
@@ -95,6 +96,7 @@ function MembershipEditor({ member, membershipOptions, onSaved, onError }) {
 }
 
 export default function MembershipsTab({ members, membershipOptions, onSaved, onError }) {
+  const { canWrite } = useAdminAccess();
   const editorRef = useRef(null);
   const [filter, setFilter] = useState(FILTER_ALL);
   const [query, setQuery] = useState("");
@@ -195,7 +197,7 @@ export default function MembershipsTab({ members, membershipOptions, onSaved, on
                       revealEditor(editorRef);
                     }}
                   >
-                    Manage
+                    {canWrite ? "Manage" : "View"}
                   </Button>
                 }
               >
@@ -219,6 +221,7 @@ export default function MembershipsTab({ members, membershipOptions, onSaved, on
       <div ref={editorRef} className="scroll-mt-32">
         <AdminSideCard
           title="Manage club membership"
+          lockWhenReadOnly={false}
           description="Tick every membership a person holds - e.g. Seniors + Project Leads for a senior project lead."
         >
           <div className="space-y-4">
@@ -229,6 +232,7 @@ export default function MembershipsTab({ members, membershipOptions, onSaved, on
               onChange={setSelectedId}
             />
             {selected && (
+              <fieldset disabled={!canWrite} className="min-w-0 disabled:opacity-70">
               <MembershipEditor
                 // Re-seed the draft whenever the member or their saved data changes.
                 key={`${selected.id}:${selected.memberships.join("|")}`}
@@ -237,6 +241,7 @@ export default function MembershipsTab({ members, membershipOptions, onSaved, on
                 onSaved={onSaved}
                 onError={onError}
               />
+              </fieldset>
             )}
           </div>
         </AdminSideCard>

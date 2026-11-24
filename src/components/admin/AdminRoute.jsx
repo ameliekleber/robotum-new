@@ -1,12 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, Outlet } from "react-router-dom";
 import { verifyAdminAccess } from "@data";
 import PageLoader from "@components/sections/common-sections/PageLoader";
+import AdminLayout from "@components/admin/AdminLayout";
+import AdminBanner from "@components/admin/AdminBanner";
+import { AdminAccessContext } from "@hooks/useAdminAccess";
+import { adminAreaForPath } from "@config/adminAreas";
 
 export default function AdminRoute() {
   const location = useLocation();
   const [status, setStatus] = useState("checking"); // 'checking' | 'allowed' | 'denied'
   const [errorMsg, setErrorMsg] = useState("");
+  const [access, setAccess] = useState(null);
 
   useEffect(() => {
     let isCancelled = false;
@@ -15,10 +20,11 @@ export default function AdminRoute() {
       setStatus("checking");
       setErrorMsg("");
 
-      const { allowed, error } = await verifyAdminAccess();
+      const { allowed, error, access: nextAccess } = await verifyAdminAccess();
       if (isCancelled) return;
 
       if (allowed) {
+        setAccess(nextAccess);
         setStatus("allowed");
       } else {
         setErrorMsg(error);
@@ -32,6 +38,17 @@ export default function AdminRoute() {
       isCancelled = true;
     };
   }, [location.pathname]);
+
+  const page = adminAreaForPath(location.pathname);
+
+  const contextValue = useMemo(
+    () => ({
+      isAdmin: Boolean(access?.isAdmin),
+      areas: access?.areas ?? {},
+      currentArea: page?.area ?? null,
+    }),
+    [access, page],
+  );
 
   // While checking: show full-page loader
   if (status === "checking") {
@@ -52,6 +69,21 @@ export default function AdminRoute() {
     );
   }
 
-  // Allowed → render whatever nested route matches (/admin, /admin/faqs, etc.)
-  return <Outlet />;
+  const areaInfo = access?.areas?.[page?.area];
+  const canReadPage =
+    !page || contextValue.isAdmin || Boolean(areaInfo?.read || areaInfo?.write);
+
+  return (
+    <AdminAccessContext.Provider value={contextValue}>
+      {canReadPage ? (
+        <Outlet />
+      ) : (
+        <AdminLayout title={page.label}>
+          <AdminBanner
+            message={`You don’t have access to ${page.label}. Ask a board member if you think you should.`}
+          />
+        </AdminLayout>
+      )}
+    </AdminAccessContext.Provider>
+  );
 }

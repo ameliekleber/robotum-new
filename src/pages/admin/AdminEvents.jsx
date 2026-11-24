@@ -15,6 +15,7 @@ import { useEnumOptions } from "@hooks/useEnumOptions";
 import AdminBanner from "@components/admin/AdminBanner";
 import AdminListHeader from "@components/admin/AdminListHeader";
 import AdminSideCard from "@components/admin/AdminSideCard";
+import { useAdminAccess } from "@hooks/useAdminAccess";
 import AdminPagination from "@components/admin/AdminPagination";
 
 import { formatEventDateRange } from "@utils/date-range";
@@ -38,6 +39,7 @@ const emptyForm = ({ category = "", format = "" } = {}) => ({
 });
 
 export default function AdminEvents() {
+  const { canWrite } = useAdminAccess();
   // Dropdown values come from the Supabase event_category / event_format enums.
   const { options: categoryOptions } = useEnumOptions(
     ENUM_TYPES.EVENT_CATEGORY,
@@ -319,15 +321,17 @@ export default function AdminEvents() {
                         variant="secondary"
                         onClick={() => handleEdit(ev)}
                       >
-                        Edit
+                        {canWrite ? "Edit" : "View"}
                       </Button>
-                      <Button
-                        size="xs"
-                        variant="danger"
-                        onClick={() => handleDelete(ev)}
-                      >
-                        Delete
-                      </Button>
+                      {canWrite && (
+                        <Button
+                          size="xs"
+                          variant="danger"
+                          onClick={() => handleDelete(ev)}
+                        >
+                          Delete
+                        </Button>
+                      )}
                     </div>
                   </li>
                 );
